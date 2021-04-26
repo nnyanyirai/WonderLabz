@@ -65,8 +65,6 @@ namespace WonderLabz.Controllers
             balance.AccountID = tblTransactionHistory.AccountID;
             balance.Balance = tblTransactionHistory.Credit;    
             _context.tblAccountsBalances.Add(balance);
-           
-            }
              await _context.SaveChangesAsync();
             return Ok(new
             {
@@ -74,35 +72,55 @@ namespace WonderLabz.Controllers
                 ResponseBody = tblTransactionHistory,
                 StatusCode = "200"
             });
-        } 
+            }
+            else
+            {
+            return Ok(new
+            {
+                Message = "Yur Account is inactive",
+                ResponseBody = "",
+                StatusCode = "500"
+            });
+            }
+           
+        }
         [HttpPost]
         [Route("api/Deposit")]
         public async Task<IActionResult> Deposit([FromBody] tblTransactionHistory tblTransactionHistory)
         {
-           var Status = _context.tblClientAccounts
-                                        .Where(p => p.AccountID == tblTransactionHistory.AccountID).FirstOrDefault();
-            if(Status.AccountStatus == (int)AccountStatus.active)
+            var Status = _context.tblClientAccounts
+                                         .Where(p => p.AccountID == tblTransactionHistory.AccountID).FirstOrDefault();
+            if (Status.AccountStatus == (int)AccountStatus.active)
             {
-                    Status.AccountStatus = (int)AccountStatus.active;  
-                    tblTransactionHistory.TransTypeID = (int)transactionTypes.Opening;
-                    tblTransactionHistory.Action = "Deposity of " + tblTransactionHistory.Credit.ToString("N3");
-            }
-            
-            _context.tblTransactionHistory.Add(tblTransactionHistory);
-            var bal = _context.tblAccountsBalances
-                                       .Where(p => p.AccountID == tblTransactionHistory.AccountID).FirstOrDefault();
+                Status.AccountStatus = (int)AccountStatus.active;
+                tblTransactionHistory.TransTypeID = (int)transactionTypes.Opening;
+                tblTransactionHistory.Action = "Deposity of " + tblTransactionHistory.Credit.ToString("N3");
+                _context.tblTransactionHistory.Add(tblTransactionHistory);
+                var bal = _context.tblAccountsBalances
+                                           .Where(p => p.AccountID == tblTransactionHistory.AccountID).FirstOrDefault();
 
-          
-            bal.AccountID = tblTransactionHistory.AccountID;
-            bal.Balance = bal.Balance + tblTransactionHistory.Credit;    
-            _context.tblAccountsBalances.Update(bal);
-           await _context.SaveChangesAsync();
-            return Ok(new
+                bal.AccountID = tblTransactionHistory.AccountID;
+                bal.Balance = bal.Balance + tblTransactionHistory.Credit;
+                _context.tblAccountsBalances.Update(bal);
+                await _context.SaveChangesAsync();
+                return Ok(new
+                {
+                    Message = "You have successfully deposited",
+                    ResponseBody = tblTransactionHistory,
+                    StatusCode = "200"
+                });
+            }
+
+            else
             {
-                Message = "You have successfully deposited",
-                ResponseBody = tblTransactionHistory,
-                StatusCode = "200"
-            });
+                return Ok(new
+                {
+                    Message = "Yur Account is inactive",
+                    ResponseBody = "",
+                    StatusCode = "500"
+                });
+
+            }
         }
         [HttpPost]
         [Route("api/Withdrawal")]
@@ -112,7 +130,7 @@ namespace WonderLabz.Controllers
                 .Where(p => p.RuleCode == (int)TransactionRules.OverdraftLimit).FirstOrDefault();
             var AccStatus = _context.tblClientAccounts
                                          .Where(p => p.AccountID == tblTransactionHistory.AccountID).FirstOrDefault();
-           if(AccStatus.AccountStatus == (int)AccountStatus.active)
+            if (AccStatus.AccountStatus == (int)AccountStatus.active)
             {
                 var bal = _context.tblAccountsBalances
                     .Where(p => p.AccountID == tblTransactionHistory.AccountID).FirstOrDefault();
@@ -120,20 +138,37 @@ namespace WonderLabz.Controllers
                 {
                     tblTransactionHistory.TransTypeID = (int)transactionTypes.Withdrawal;
                     tblTransactionHistory.Action = "Withidrawn an amount of " + tblTransactionHistory.Debit.ToString("N3");
-                    _context.tblTransactionHistory.Add(tblTransactionHistory); 
+                    _context.tblTransactionHistory.Add(tblTransactionHistory);
                     bal.Balance = bal.Balance - tblTransactionHistory.Debit;
                     bal.AccountID = tblTransactionHistory.AccountID;
-                }
-                   _context.tblAccountsBalances.Update(bal);
+                    _context.tblAccountsBalances.Update(bal);
                     await _context.SaveChangesAsync();
-                 
+                    return Ok(new
+                    {
+                        Message = "You have successfully Withdrawn",
+                        ResponseBody = tblTransactionHistory,
+                        StatusCode = "200"
+                    });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        Message = "Insufficient Account balance",
+                        ResponseBody = "",
+                        StatusCode = "500"
+                    });
+                }
             }
-            return Ok(new
+            else
             {
-                Message = "You have successfully Withdrawn",
-                ResponseBody = tblTransactionHistory,
-                StatusCode = "200"
-            });
+                return Ok(new
+                {
+                    Message = "Account inActive",
+                    ResponseBody = "",
+                    StatusCode = "500"
+                });
+            }
         }
         [HttpPost]
         [Route("api/TransferFunds")]
@@ -165,15 +200,34 @@ namespace WonderLabz.Controllers
                     balFrom.AccountID = transferFunds.FromAccount;
                     _context.tblAccountsBalances.Update(balFrom);
 
-                }
-                         }
-             await _context.SaveChangesAsync();
+                 await _context.SaveChangesAsync();
              return Ok(new
             {
                 Message = "You have successfully transferred funds",
                 ResponseBody = transferFunds,
                 StatusCode = "200"
             });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        Message = "Insufficient Account balance",
+                        ResponseBody = "",
+                        StatusCode = "500"
+                    });
+                }
+            }
+        else
+                {
+                    return Ok(new
+                    {
+                        Message = "Insufficient Account balance",
+                        ResponseBody = "",
+                        StatusCode = "500"
+                    });
+                }
+            
         }
     
     }
